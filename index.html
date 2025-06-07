@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Modern Responsive Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #fefefe;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+
+      /* Prevent zooming gestures on mobile */
+      touch-action: manipulation;
+      -ms-touch-action: manipulation;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px 10px 10px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: #333;
+      margin: 0;
+    }
+
+    .calculator-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 15px;
+      box-sizing: border-box;
+    }
+
+    .calculator {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .display {
+      background: #f4f4f4;
+      color: #333;
+      font-size: 1.8rem;
+      padding: 15px 12px;
+      border-radius: 12px;
+      text-align: right;
+      min-height: 56px;
+      overflow-x: auto;
+      margin-bottom: 18px;
+      caret-color: transparent;
+      word-break: break-word;
+
+      /* Scrollbar styling */
+      scrollbar-width: thin;
+      scrollbar-color: #bbb transparent;
+    }
+
+    /* Webkit scrollbar */
+    .display::-webkit-scrollbar {
+      height: 6px;
+    }
+    .display::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .display::-webkit-scrollbar-thumb {
+      background-color: #bbb;
+      border-radius: 10px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      padding: 16px 0;
+      font-size: 1.05rem;
+      border: none;
+      border-radius: 10px;
+      background: #e9e9e9;
+      color: #333;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      user-select: none;
+      outline-offset: 2px;
+    }
+
+    button:hover {
+      background: #d0d0d0;
+    }
+
+    button:active {
+      background: #b0b0b0;
+      transform: scale(0.96);
+    }
+
+    button:focus-visible {
+      outline: 2px solid #4CAF50;
+      outline-offset: 2px;
+    }
+
+    .equal {
+      background-color: #4CAF50;
+      color: white;
+      font-weight: 600;
+    }
+
+    .equal:hover {
+      background-color: #45a049;
+    }
+
+    .clear {
+      background-color: #f44336;
+      color: white;
+      font-weight: 600;
+    }
+
+    .clear:hover {
+      background-color: #d32f2f;
+    }
+
+    footer {
+      text-align: center;
+      padding: 12px 10px;
+      font-size: 0.9rem;
+      color: #999;
+      font-style: italic;
+    }
+
+    /* Loading Screen */
+    #loader {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.6s ease;
+    }
+
+    #loader h1 {
+      font-size: 1.8rem;
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    .loading-bar-container {
+      width: 80%;
+      max-width: 300px;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .loading-bar {
+      height: 100%;
+      width: 0%;
+      background: #4CAF50;
+      animation: loading 3s linear forwards;
+    }
+
+    @keyframes loading {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    #loader p {
+      font-size: 0.95rem;
+      color: #777;
+      font-style: italic;
+    }
+
+    @media screen and (max-width: 480px) {
+      header h1, #loader h1 {
+        font-size: 1.5rem;
+      }
+
+      button {
+        padding: 12px 0;
+        font-size: 0.9rem;
+      }
+
+      .display {
+        font-size: 1.4rem;
+        padding: 12px 10px;
+      }
+
+      #loader p {
+        font-size: 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loader">
+    <h1>Advanced Responsive Calculator</h1>
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
+    <p>Designed and developed by Mayur Kumar</p>
+  </div>
+
+  <!-- Main Calculator -->
+  <header>
+    <h1>Advanced Responsive Calculator</h1>
+  </header>
+
+  <div class="calculator-container">
+    <div class="calculator" role="application" aria-label="Calculator">
+      <div class="display" id="display" aria-live="polite" aria-atomic="true" role="textbox" aria-readonly="true" tabindex="0">0</div>
+      <div class="buttons">
+        <button class="clear" onclick="clearDisplay()">C</button>
+        <button onclick="append('(')">(</button>
+        <button onclick="append(')')">)</button>
+        <button onclick="append('^')">^</button>
+        <button onclick="append('/')">÷</button>
+
+        <button onclick="append('7')">7</button>
+        <button onclick="append('8')">8</button>
+        <button onclick="append('9')">9</button>
+        <button onclick="append('*')">×</button>
+        <button onclick="append('√(')">√</button>
+
+        <button onclick="append('4')">4</button>
+        <button onclick="append('5')">5</button>
+        <button onclick="append('6')">6</button>
+        <button onclick="append('-')">−</button>
+        <button onclick="append('log10(')">log</button>
+
+        <button onclick="append('1')">1</button>
+        <button onclick="append('2')">2</button>
+        <button onclick="append('3')">3</button>
+        <button onclick="append('+')">+</button>
+        <button onclick="append('ln(')">ln</button>
+
+        <button onclick="append('0')">0</button>
+        <button onclick="append('.')">.</button>
+        <button onclick="append('sin(')">sin</button>
+        <button onclick="append('cos(')">cos</button>
+        <button onclick="append('tan(')">tan</button>
+
+        <button onclick="append('π')">π</button>
+        <button onclick="append('e')">e</button>
+        <button onclick="backspace()">⌫</button>
+        <button class="equal" onclick="calculate()">=</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Designed and developed by <strong>Mayur Kumar</strong>
+  </footer>
+
+  <script>
+    const display = document.getElementById("display");
+
+    // Allowed operators and function starts for validation
+    const operators = ['+', '-', '*', '/', '^'];
+    const funcPatterns = ['sin(', 'cos(', 'tan(', 'log10(', 'ln(', '√('];
+
+    // Append value with basic validation to avoid invalid sequences
+    function append(value) {
+      let text = display.innerText;
+
+      // Reset display if Error or 0 and not appending operator or function start
+      if (text === "0" || text === "Error") {
+        if (operators.includes(value) || funcPatterns.some(f => value.startsWith(f))) {
+          // If starting with operator or function on zero or error, do nothing
+          return;
+        } else {
+          display.innerText = "";
+          text = "";
+        }
+      }
+
+      // Prevent multiple consecutive operators (except minus after operator for negative numbers)
+      if (operators.includes(value)) {
+        if (text === "" && value !== '-') {
+          // Don't allow operator first unless minus (negative)
+          return;
+        }
+        const lastChar = text.slice(-1);
+        if (operators.includes(lastChar)) {
+          // Replace last operator with new operator (except minus rule)
+          if (!(value === '-' && lastChar !== '-')) {
+            display.innerText = text.slice(0, -1) + value;
+            return;
+          }
+        }
+      }
+
+      // Prevent multiple decimals in one number segment
+      if (value === '.') {
+        // Get last number segment after operator or function
+        const parts = text.split(/[\+\-\*\/\^\(\)]/);
+        const lastPart = parts[parts.length -1];
+        if (lastPart.includes('.')) {
+          return; // already has decimal point
+        }
+      }
+
+      display.innerText += value;
+    }
+
+    function clearDisplay() {
+      display.innerText = "0";
+    }
+
+    function backspace() {
+      let text = display.innerText;
+      if (text.length <= 1) {
+        display.innerText = "0";
+        return;
+      }
+
+      for (let func of funcPatterns) {
+        if (text.endsWith(func)) {
+          display.innerText = text.slice(0, -func.length);
+          return;
+        }
+      }
+
+      display.innerText = text.slice(0, -1);
+    }
+
+    function calculate() {
+      try {
+        let expr = display.innerText
+          .replace(/π/g, 'pi')
+          .replace(/√\(/g, 'sqrt(')
+          .replace(/ln\(/g, 'log(')
+          .replace(/\^/g, '**');
+
+        const result = math.evaluate(expr);
+
+        if (typeof result === 'number') {
+          // Format float to max 8 decimal places (remove trailing zeros)
+          display.innerText = parseFloat(result.toFixed(8)).toString();
+        } else {
+          display.innerText = result.toString();
+        }
+      } catch (e) {
+        display.innerText = "Invalid Expression";
+      }
+    }
+
+    document.addEventListener("keydown", function (e) {
+      const key = e.key;
+
+      // Allow digits, operators, parentheses, decimal point
+      if (!e.ctrlKey && !e.metaKey) {
+        if (!isNaN(key) || "+-*/().^".includes(key)) {
+          e.preventDefault();
+          append(key);
+          return;
+        }
+      }
+
+      if (key === "Enter") {
+        e.preventDefault();
+        calculate();
+      } else if (key === "Backspace") {
+        e.preventDefault();
+        backspace();
+      } else if (key.toLowerCase() === "c") {
+        e.preventDefault();
+        clearDisplay();
+      }
+    });
+
+    // Prevent zooming on gesture start (especially iOS)
+    document.addEventListener('gesturestart', function (e) {
+      e.preventDefault();
+    });
+
+    // Prevent zoom on desktop (Ctrl + mouse wheel, Ctrl + plus/minus keys)
+    document.addEventListener('wheel', function (e) {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=')) {
+        e.preventDefault();
+      }
+    });
+
+    // Hide loader after 3 seconds
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const loader = document.getElementById("loader");
+        loader.style.opacity = 0;
+        setTimeout(() => loader.style.display = "none", 600); // Wait for fade-out
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
